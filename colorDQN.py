@@ -16,10 +16,10 @@ class Network(nn.Module):
         self.fc5 = nn.Linear(350, num_actions)
 
     def forward(self, x):
-        x = torch.relu(self.fc1(x))
-        x = torch.relu(self.fc2(x))
-        x = torch.relu(self.fc3(x))
-        x = torch.relus(self.fc4(x))
+        x = nn.functional.leaky_relu(self.fc1(x))
+        x = nn.functional.leaky_relu(self.fc2(x))
+        x = nn.functional.leaky_relu(self.fc3(x))
+        x = nn.functional.leaky_relu(self.fc4(x))
         x = self.fc5(x)
         return x
     
@@ -129,7 +129,7 @@ def generate_data(DQN, min_epsilon, epsilon, copy_step):
     
     reward = 0
     turn = 0
-    decay = 0.9999
+    decay = 0.99995
     iter = 0
     loss = 0
     repetitions = 1
@@ -147,7 +147,7 @@ def generate_data(DQN, min_epsilon, epsilon, copy_step):
             return loss, epsilon, task.turns
         if task.is_won:
             repetitions +=1 
-            if repetitions % 4 == 0:
+            if repetitions % 2 == 0:
                 print("WIN")
                 return loss, epsilon, task.turns
             task.reset()
@@ -158,7 +158,7 @@ def dojo(DQN, iterations, min_epsilon, epsilon, copy_step):
     total_loss = 0
     total_turns = 0
     games = 1
-    decay = 0.9999
+    decay = 0.99995
     task = colorgame.ColorGame(5)
     task.create_task()
     test_task_state = task.return_state()
