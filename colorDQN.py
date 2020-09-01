@@ -19,7 +19,7 @@ class Network(nn.Module):
         x = torch.relu(self.fc1(x))
         x = torch.relu(self.fc2(x))
         x = torch.relu(self.fc3(x))
-        x = self.fc4(x)
+        x = torch.relus(self.fc4(x))
         x = self.fc5(x)
         return x
     
@@ -179,7 +179,7 @@ def dojo(DQN, iterations, min_epsilon, epsilon, copy_step):
         if i % 10 == 0:
             print(i)
             print(DQN.predict(test_task_state).detach())
-        if i % 10 == 0:
+        if i % 7 == 0:
             DQN.copy_weights()
         epsilon = max(epsilon*decay, min_epsilon)
         """
