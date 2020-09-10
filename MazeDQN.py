@@ -45,12 +45,12 @@ class Network(nn.Module):
         self.fc3 = nn.Linear(64, num_actions)
 
     def forward(self, x):  
-        x = torch.relu((self.conv1(x)))
-        x = torch.relu((self.conv2(x)))
+        x = nn.functional.leaky_relu((self.conv1(x)))
+        x = nn.functional.leaky_relu((self.conv2(x)))
         shapes = list(x.size())
         x = x.view(shapes[0], calculate_flat_input(1, self.conv_output_H, self.conv_output_W)*32)
-        x = torch.relu(self.fc1(x))
-        x = self.fc2(x)
+        x = nn.functional.leaky_relu(self.fc1(x))
+        x = nn.functional.leaky_relu(self.fc2(x))
         x= self.fc3(x)
         return x
 
@@ -61,7 +61,7 @@ class MazeDQN:
         self.num_actions = num_actions
         self.model = Network(num_in_positions, num_actions, num_cols, num_rows,1)
         self.target_model = Network(num_in_positions, num_actions, num_cols, num_rows, 32)
-        learning_rate = 0.000134
+        learning_rate = 0.0000134
         self.optimizer = optim.Adam(self.model.parameters() ,lr = learning_rate)
         self.criterion = nn.MSELoss()
         self.name = 0   
@@ -184,12 +184,12 @@ def generate_data(DQN, min_epsilon, epsilon, copy_step):
     is_finished = False
     reward = 0
     turn = 0
-    decay = 0.9999
+    decay = 0.9995
     iter = 0
     fails = 0
     repetitions = 1
     loss = 0
-    while repetitions % 5 != 0:
+    while repetitions % 2 != 0:
         prev_observations = maze.return_state()
         possible_actions = maze.possible_actions()
         action, action_key = DQN.get_action(prev_observations, epsilon, possible_actions)
@@ -207,7 +207,7 @@ def generate_data(DQN, min_epsilon, epsilon, copy_step):
         iter +=1
         if iter % 24 == 0:
             epsilon = max(epsilon*decay, min_epsilon)
-        if turn % 100 == 0:
+        if turn % 50 == 0:
             fails = 1
             return fails, turn, loss, epsilon
     return fails, turn, loss, epsilon
@@ -217,7 +217,7 @@ def dojo(DQN, iterations, min_epsilon, epsilon, copy_step):
     total_fails = 0
     total_turns = 0
     games = 1
-    decay = 0.9999
+    decay = 0.9995
     test_game = game.MazeGame(9,7)
     test_game.load_test_maze("test")
     print(test_game.board)
@@ -240,7 +240,7 @@ def dojo(DQN, iterations, min_epsilon, epsilon, copy_step):
             total_loss = 0
             total_turns = 0
             print("games", i)
-        if i % 5 == 0:
+        if i % 7 == 0:
             DQN.copy_weights()
             test_predict = DQN.predict(np.atleast_2d(test_state)).detach().numpy()
             print(test_predict)
@@ -253,8 +253,8 @@ def dojo(DQN, iterations, min_epsilon, epsilon, copy_step):
         
     DQN.save_weights("mazenet")
 
-"""
+
 DQN = MazeDQN(24, 4, 9, 7)
 DQN.load_weights("mazenet")
-dojo(DQN, 20000, 0.05, 0.8, 150)
-"""
+DQN.copy_weights()
+dojo(DQN, 10000, 0.15, 0.3, 150)

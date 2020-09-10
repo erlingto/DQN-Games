@@ -102,7 +102,7 @@ class ColorRendering:
             self.DQN.load_weights("colornet5")
         elif task.square_size == 5:
             self.DQN = colorDQN.ColorDQN(25, 25, 5, 5)
-            self.DQN.load_weights("colornet55")
+            self.DQN.load_weights("colornetminRelu")
         self.side_length = 100
 
         self.task = task
@@ -170,7 +170,7 @@ class ColorRendering:
         pygame.display.flip()   
 
 
-task = colorgame.ColorGame(5)
-task.create_task()
+task = game.MazeGame(9,7)
+task.create_path()
 render(task)
 

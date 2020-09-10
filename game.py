@@ -6,7 +6,7 @@ class MazeGame:
         self.rows = num_rows
         self.board = np.zeros((num_col, num_rows), dtype = int)
         #self.board = np.zeros(num_col*num_rows, dtype = int)
-        self.num_walls = 15
+        self.num_walls = 20
         self.actions = {1: 'up', 2: 'down', 3: 'left', 4: 'right'}
         self.position = None, None
         self.start = None, None
@@ -160,7 +160,7 @@ class MazeGame:
         self.board[self.start] = 3
 
         list_of_locations_keys.remove(start_key)
-        list_steps = [14, 15, 16 ,17]
+        list_steps = [14, 16, 20 ,24]
         steps = np.random.choice(list_steps)
         self.path = [0] * (steps + 1)
         self.path[0] = self.start
@@ -305,7 +305,5 @@ game.create_path()
 game.draw_path()
 game.clean_path()
 
-print(game.board)
 game.create_test_maze("test")
-game.load_test_maze("test")
-print(game.board)
+

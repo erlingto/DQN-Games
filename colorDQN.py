@@ -37,7 +37,7 @@ class ColorDQN:
         self.experience = {'prev_obs' : [], 'a' : [], 'r': [], 'obs' : [], 'done': [] } 
         self.min_exp = 100
         self.max_exp = 320
-        self.gamma = 0.95
+        self.gamma = 0.90
 
     def predict(self, inputs):
         x = torch.from_numpy(inputs).float().flatten()
@@ -142,7 +142,7 @@ def generate_data(DQN, min_epsilon, epsilon, copy_step):
         DQN.add_experience(exp)
         if task.turns % 2== 0:
             loss += DQN.train()
-        if task.turns == 40:
+        if task.turns == 15:
             epsilon = max(epsilon*decay, min_epsilon)
             return loss, epsilon, task.turns
         if task.is_won:
@@ -155,6 +155,8 @@ def generate_data(DQN, min_epsilon, epsilon, copy_step):
     return loss, epsilon, task.turns
 
 def dojo(DQN, iterations, min_epsilon, epsilon, copy_step):
+    DQN.load_weights("colornetminRelu")
+    DQN.copy_weights()
     total_loss = 0
     total_turns = 0
     games = 1
@@ -190,7 +192,8 @@ def dojo(DQN, iterations, min_epsilon, epsilon, copy_step):
         """          
     DQN.save_weights("colornetminRelu")
 
-
+"""
 DQN  = ColorDQN(25, 25, 5, 5)
 
-dojo(DQN, 50000, 0.2, 0.9, 32)
+dojo(DQN, 15000, 0.15, 0.4, 32)
+"""
