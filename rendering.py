@@ -45,7 +45,7 @@ class MazeRendering:
                     pygame.quit()
                     exit()
                 if event.type == pygame.MOUSEBUTTONUP:
-                    prev_observations = maze.return_state()
+                    prev_observations = maze.return_state_1d()
                     possible_actions = maze.possible_actions()
                     action, action_key = self.DQN.get_action(prev_observations, 0, possible_actions)
                     position = maze.game_move(action)
@@ -57,7 +57,7 @@ class MazeRendering:
                         self.render(self.white, self.black, self.red, self.green, self.white)
                         sleep(4)
                         maze = game.MazeGame(9,7)
-                        maze.create_path()
+                        maze.create_path(20)
                         self.maze = maze
                         self.done = False
 
@@ -171,6 +171,6 @@ class ColorRendering:
 
 
 task = game.MazeGame(9,7)
-task.create_path()
+task.create_path(20)
 render(task)
 

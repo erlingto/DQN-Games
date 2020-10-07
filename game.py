@@ -121,6 +121,7 @@ class MazeGame:
             position = (position[0]-1,position[1])
         elif action == "right":
             position = (position[0]+1,position[1])
+        self.board[self.position] = 0
         self.position = position
         return position 
 
@@ -147,6 +148,54 @@ class MazeGame:
         else:
             return finished, 0
     
+    def create_path(self, steps): 
+        locations = {i : (0,0) for i in range(self.col*self.rows)}
+        i = 0
+        for x in range (self.col):
+            for y in range(self.rows):
+                locations[i] = (x, y)
+                i+= 1
+        start_key = np.random.choice(list(locations.keys()))
+        self.start = locations[start_key]
+        self.position = self.start
+        self.board[self.start] = 4
+        self.path = [0] * (steps + 1)
+        self.path[0] = self.position
+        for i in range(steps):
+            possible_actions = self.possible_actions()
+            action = possible_actions[np.random.choice(list(possible_actions.keys()))]
+            self.position = self.move(action)
+            self.path[i+1] = self.position
+            
+            if action in self.possible_actions():
+                self.position = self.move(action)
+                self.path[i + 1] = self.position
+                i+= 1
+                if action in self.possible_actions():
+                    self.position = self.move(action)
+                    self.path[i + 1] = self.position
+                    i+= 1
+        longest = -1
+        temp_end = None
+        for i in range(len(self.path)):
+            distance = abs(self.path[i][0]-self.start[0]) + abs(self.path[i][1]-self.start[1])
+            if (distance > longest ):
+                longest = distance
+                temp_end = self.path[i]
+                
+        self.end = temp_end
+        self.position = self.start
+        self.board[self.end] = 6
+        for i in range(len(locations.keys())):
+            if locations[i] in self.path:
+                locations.pop(i)
+
+        for i in range(self.num_walls):
+            choice = np.random.choice(list(locations.keys()))
+            if locations[choice] not in self.path:
+                self.board[locations[choice]] = 1
+            locations.pop(choice)
+    """            
     def create_path(self):
         list_of_locations = [0] * (self.col*self.rows)
         list_of_locations_keys = [i for i in range(self.col*self.rows)]
@@ -196,7 +245,7 @@ class MazeGame:
             if list_of_locations[choice] not in self.path:
                 self.board[list_of_locations[choice]] = 1
 
-    
+    """
     def draw_path(self):
         for i in range(len(self.path)-1):
             self.board[self.path[i+1]] = 10
@@ -214,19 +263,13 @@ class MazeGame:
         self.position = self.start
         self.board[self.position] = 3
     
-    def return_state_1c(self):
-        board = self.board
-        state = np.zeros((self.col, self.rows))
-        for i in range(self.col):
-            for j in range(self.rows):
-                if board[i][j] == 1:
-                    walls[i][j] = 1
-        state[self.position] = 2
-        state[self.end] = 3
-        return state 
-        
+    def return_state_1d(self):
+        state = np.copy(self.board)
+        state[self.position] = 3
+        state[self.end] = 4
+        return state
+
     def return_state(self):
-        
         board = self.board
         state = [None] * 3
         position = np.zeros((self.col, self.rows), dtype = int)
@@ -236,34 +279,8 @@ class MazeGame:
             for j in range(self.rows):
                 if board[i][j] == 1:
                     walls[i][j] = 1
-        
-        position_row = self.position[1]
-        position_col = self.position[0]
-
-
-        end_row = self.end[1]
-        end_col = self.end[0]
-
-        if self.rows > position_row + 1:
-            position[self.position[0], self.position[1]+1] = 1
-        if position_row > 0:
-            position[self.position[0], self.position[1]-1] = 1
-        if self.col > position_col + 1:
-            position[self.position[0]+1, self.position[1]] = 1
-        if position_col > 0:
-            position[self.position[0]-1, self.position[1]] = 1
-
-        if self.rows > end_row + 1:
-            end[self.end[0], self.end[1]+1] = 1
-        if end_row > 0:
-            end[self.end[0], self.end[1]-1] = 1
-        if self.col > end_col + 1:
-            end[self.end[0]+1, self.end[1]] = 1
-        if end_col > 0:
-            end[self.end[0]-1, self.end[1]] = 1
-
-        position[self.position] = 10
-        end[self.end] = 10
+        position[self.position] = 1
+        end[self.end] = 1
         state[0] = position
         state[1] = end
         state[2] = walls
@@ -301,7 +318,7 @@ class MazeGame:
 
 
 game = MazeGame(9,7)
-game.create_path()
+game.create_path(16)
 game.draw_path()
 game.clean_path()
 
