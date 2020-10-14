@@ -45,7 +45,7 @@ class MazeRendering:
                     pygame.quit()
                     exit()
                 if event.type == pygame.MOUSEBUTTONUP:
-                    prev_observations = maze.return_state_1d()
+                    prev_observations = maze.return_state_2d()
                     possible_actions = maze.possible_actions()
                     action, action_key = self.DQN.get_action(prev_observations, 0, possible_actions)
                     position = maze.game_move(action)
@@ -66,6 +66,9 @@ class MazeRendering:
         self.screen.fill(background)
         w = 0
         h = 0
+        render_map = np.copy(self.maze.board)
+        render_map[self.maze.end] = 4
+        render_map[self.maze.position] = 3
         if not self.done:
             textsurface = self.text.render("Spiller: ", True, (0, 0, 0))
             self.screen.blit(textsurface,(400,0))
@@ -80,11 +83,11 @@ class MazeRendering:
         for col in range(self.width):
             for row in range(self.height):
                 space = (col, row)
-                if self.maze.board[space] == 1:
+                if render_map[space] == 1:
                     pygame.draw.rect(self.screen, self.blue, (self.side_length + 1 + col* 100, 51 + row*100, 98, 98))
-                if self.maze.board[space] == 3:
+                if render_map[space] == 3:
                     pygame.draw.circle(self.screen, self.green, [self.side_length + col*100 + 50, row * 100 + 100], 45)
-                if self.maze.board[space] == 4:
+                if render_map[space] == 4:
                     pygame.draw.circle(self.screen, self.red, [self.side_length + col*100 + 50, row * 100 + 100], 45)
             w += 1
             if w == self.width:

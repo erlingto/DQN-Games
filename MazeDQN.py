@@ -34,21 +34,19 @@ class Network(nn.Module):
     def __init__(self, num_in_positions, num_actions, num_cols, num_rows, batch_size):
         super(Network, self).__init__()
         self.batch_size = batch_size
-        self.conv1 = nn.Conv2d(in_channels = 1, out_channels = 8, kernel_size = 2, stride = 1, padding = 0)
-        self.conv2 = nn.Conv2d(in_channels = 8, out_channels = 16, kernel_size = 2, stride = 1, padding = 0)
-        self.conv_output_H = calculate_conv_output(num_rows, 2, 0, 1)
-        self.conv_output_W = calculate_conv_output(num_cols, 2, 0, 1)
-        self.conv_output_H = calculate_conv_output(self.conv_output_H, 2, 0, 1)
-        self.conv_output_W = calculate_conv_output(self.conv_output_W, 2, 0, 1)
-        self.fc1 = nn.Linear(calculate_flat_input(1, self.conv_output_H, self.conv_output_W)*16, 256)
+        self.conv1 = nn.Conv2d(in_channels = 2, out_channels = 24, kernel_size = 2, stride = 1, padding = 1)
+
+        self.conv_output_H = calculate_conv_output(num_rows, 2, 1, 1)
+        self.conv_output_W = calculate_conv_output(num_cols, 2, 1, 1)
+        self.fc1 = nn.Linear(calculate_flat_input(1, self.conv_output_H, self.conv_output_W)*24, 256)
         self.fc2 = nn.Linear(256, 64)
         self.fc3 = nn.Linear(64, num_actions)
 
     def forward(self, x):  
         x = nn.functional.leaky_relu((self.conv1(x)))
-        x = nn.functional.leaky_relu((self.conv2(x)))
+      
         shapes = list(x.size())
-        x = x.view(shapes[0], calculate_flat_input(1, self.conv_output_H, self.conv_output_W)*16)
+        x = x.view(shapes[0], calculate_flat_input(1, self.conv_output_H, self.conv_output_W)*24)
         x = nn.functional.leaky_relu(self.fc1(x))
         x = nn.functional.leaky_relu(self.fc2(x))
         x= self.fc3(x)
@@ -61,31 +59,31 @@ class MazeDQN:
         self.num_actions = num_actions
         self.model = Network(num_in_positions, num_actions, num_cols, num_rows,1)
         self.target_model = Network(num_in_positions, num_actions, num_cols, num_rows, 5)
-        learning_rate = 0.00134
+        learning_rate = 0.00001034
         self.optimizer = optim.Adam(self.model.parameters() ,lr = learning_rate)
         self.criterion = nn.MSELoss()
         self.name = 0   
-        self.batch_size = 16 
+        self.batch_size = 8 
         self.experience = {'prev_obs' : [], 'a' : [], 'r': [], 'obs' : [], 'done': [] } 
         self.min_exp = 32
         self.max_exp = 256
-        self.gamma = 0.85
+        self.gamma = 0.9
 
     def predict(self, inputs):
         x = torch.from_numpy(inputs).float()
-        x = x[None, None,:,:]
+        x = x[None, :, :]
         
         return self.model(x)
     
     def predict_batch(self, inputs):
         x = torch.from_numpy(inputs).float()
-        x = x[:, None, :, :]
+        x = x[:, :, :]
         
         return self.model(x)
 
     def target_predict(self, inputs):
         x = torch.from_numpy(inputs).float()
-        x = x[:, None, :, :]
+        x = x[:, :, :]
         
         return self.target_model(x)
     
@@ -132,18 +130,22 @@ class MazeDQN:
        
         actions  = np.asarray([self.experience['a'][i] for i in ids])
         rewards = np.asarray([self.experience['r'][i] for i in ids])
+        next_value = np.zeros(self.batch_size)
         next_states = np.asarray([self.experience['obs'][i] for i in ids])
         next_states = np.squeeze(next_states)
        
         dones = np.asarray([self.experience['done'][i] for i in ids])
-
-        next_value = np.max(self.target_predict(next_states).detach().numpy(), axis=1)
+        ''' DOUBLE DQN '''
+        ''' This is a bit ugly '''
+        next_state_action = np.argmax(self.predict_batch(next_states).detach().numpy(), axis = 1)
+        next_values = self.target_predict(next_states).detach().numpy()
+        for i in range(len(next_values)):
+            action = next_state_action[i]
+            next_value[i] = next_values[i][action]
         ''' Q - learning aspect '''
         actual_values = np.where(dones, rewards, rewards+self.gamma*next_value)
       
-        
 
-        
         '''  !!!    '''
         actions = np.expand_dims(actions, axis = 1)
         
@@ -155,7 +157,8 @@ class MazeDQN:
         selected_action_values = torch.sum(self.predict_batch(states) * actions_one_hot, dim = 1)
         
         actual_values = torch.FloatTensor(actual_values)
-        
+
+
         self.optimizer.zero_grad()
         loss = self.criterion(selected_action_values, actual_values)
         loss.backward()
@@ -188,30 +191,29 @@ def generate_data(DQN, min_epsilon, epsilon, copy_step):
     is_finished = False
     reward = 0
     turn = 0
-    decay = 0.99995
-    iter = 0
+    decay = 0.999995
     fails = 0
     repetitions = 1
     loss = 0
     while repetitions % 2 != 0:
-        prev_observations = maze.return_state_1d()
+        prev_observations = maze.return_state_2d()
         possible_actions = maze.possible_actions()
         action, action_key = DQN.get_action(prev_observations, epsilon, possible_actions)
         maze.move(action)
         is_finished, reward = maze.check(turn)
-        observations = maze.return_state_1d()
+        observations = maze.return_state_2d()
         turn += 1
         exp = {'prev_obs': prev_observations, 'a' : action_key-1, 'r': reward, 'obs': observations, 'done' : is_finished }
         DQN.add_experience(exp)
-        loss += DQN.train()
         if is_finished:
             maze.reset() # TODO
             repetitions +=1
             is_finished = False
-        iter +=1
-        if iter % 24 == 0:
+        if turn % 20 == 0:
             epsilon = max(epsilon*decay, min_epsilon)
-        if turn % 50 == 0:
+        if turn % 8 == 0:
+            loss += DQN.train()
+        if turn % 40 == 0:
             fails = 1
             return fails, turn, loss, epsilon
     return fails, turn, loss, epsilon
@@ -224,11 +226,12 @@ def dojo(DQN, iterations, min_epsilon, epsilon, copy_step):
     decay = 0.99995
     test_game = game.MazeGame(9,7)
     
-    test_state = test_game.return_state_1d()
+    test_state = test_game.return_state_2d()
     test_predict = DQN.predict(np.atleast_2d(test_state)).detach().numpy()
     print(test_predict)
     for i in range(iterations):
         fails, turns, loss, epsilon = generate_data(DQN, min_epsilon, epsilon, copy_step)
+        loss += DQN.train()
         total_fails += fails
         total_loss += loss 
         total_turns += turns
@@ -243,7 +246,7 @@ def dojo(DQN, iterations, min_epsilon, epsilon, copy_step):
             total_loss = 0
             total_turns = 0
             print("games", i)
-        if i % 5 == 0:
+        if i % 8 == 0:
             DQN.copy_weights()
             test_predict = DQN.predict(np.atleast_2d(test_state)).detach().numpy()
             print(test_predict)
@@ -258,4 +261,4 @@ def dojo(DQN, iterations, min_epsilon, epsilon, copy_step):
 
 
 DQN = MazeDQN(24, 4, 9, 7)
-dojo(DQN, 100000, 0.15, 0.7, 150)    
+dojo(DQN, 400000, 0.25, 0.5, 150)    

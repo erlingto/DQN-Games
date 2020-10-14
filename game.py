@@ -269,6 +269,21 @@ class MazeGame:
         state[self.end] = 4
         return state
 
+    def return_state_2d(self):
+        state = [None] * 2
+        position_end = np.zeros((self.col, self.rows), dtype = int)
+        walls = np.zeros((self.col, self.rows), dtype = int)
+        for i in range(self.col):
+            for j in range(self.rows):
+                if self.board[i][j] == 1:
+                    walls[i][j] = 1
+        position_end[self.position] = 1
+        position_end[self.end] = 2
+        state[0] = position_end
+        state[1] = walls    
+        return state
+
+
     def return_state(self):
         board = self.board
         state = [None] * 3
