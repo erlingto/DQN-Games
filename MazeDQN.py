@@ -255,6 +255,4 @@ def dojo(DQN, iterations, min_epsilon, epsilon, copy_step):
 
 
 DQN = MazeDQN(24, 4, 9, 7)
-DQN.load_weights("mazenet")
-DQN.copy_weights()
 dojo(DQN, 10000, 0.15, 0.3, 150)

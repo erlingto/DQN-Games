@@ -82,24 +82,7 @@ class MazeGame:
             actions.pop(3)
         
         return actions
-    '''
-    def possible_actions(self):
-        position = self.position
-        column = position % self.col
-    
-        row = int((position - column) / self.col)
-        
-        actions = self.actions.copy()
-        if row == self.rows-1 or self.board[position + self.col] == 1:
-            actions.pop(2)
-        if row == 0 or self.board[position - self.col] == 1:
-            actions.pop(1)
-        if column == self.col-1 or self.board[position + 1] == 1:
-            actions.pop(4)
-        if column == 0 or self.board[position - 1] == 1:
-            actions.pop(3)
-        return actions
-    '''    
+
     def remove_opposite_action(self, list_of_actions, action, action2):
         if action == "up" or action2 == "up":
             list_of_actions.pop(2, None)
@@ -147,6 +130,26 @@ class MazeGame:
         else:
             return finished, 0
     
+    def create_path(self, steps):
+        locations = {i : 0 for i in range(self.col*self.rows)}
+        i = 0
+        for x in range(self.col):
+            for y in range(self.rows):
+                locations[i] = (x,y)
+                i+=1
+        
+        start_key = locations[np.random.choice(locations.keys())]
+        locations.pop(start_key)
+        self.path = [0] * (steps + 1)
+        self.path[0] = self.start
+        self.position = self.start
+        for i in range(steps):
+            action = possible_actions[np.random.choice(list(possible_actions.keys()))]
+            self.position = self.move(action)
+            self.path[i+1] = self.position
+            locations.pop(self.position)
+    
+    """
     def create_path(self):
         list_of_locations = [0] * (self.col*self.rows)
         list_of_locations_keys = [i for i in range(self.col*self.rows)]
@@ -195,7 +198,7 @@ class MazeGame:
             list_of_locations_keys.remove(choice)
             if list_of_locations[choice] not in self.path:
                 self.board[list_of_locations[choice]] = 1
-
+    """
     
     def draw_path(self):
         for i in range(len(self.path)-1):
@@ -206,27 +209,15 @@ class MazeGame:
     def clean_path(self):
         for i in range(len(self.path)-1):
             self.board[self.path[i+1]] = 0
-        
         self.board[self.end] = 4
         self.board[self.start] = 3
+
     def reset(self):
         self.board[self.position] = 4
         self.position = self.start
         self.board[self.position] = 3
-    
-    def return_state_1c(self):
-        board = self.board
-        state = np.zeros((self.col, self.rows))
-        for i in range(self.col):
-            for j in range(self.rows):
-                if board[i][j] == 1:
-                    walls[i][j] = 1
-        state[self.position] = 2
-        state[self.end] = 3
-        return state 
         
     def return_state(self):
-        
         board = self.board
         state = [None] * 3
         position = np.zeros((self.col, self.rows), dtype = int)
@@ -236,34 +227,9 @@ class MazeGame:
             for j in range(self.rows):
                 if board[i][j] == 1:
                     walls[i][j] = 1
-        
-        position_row = self.position[1]
-        position_col = self.position[0]
 
-
-        end_row = self.end[1]
-        end_col = self.end[0]
-
-        if self.rows > position_row + 1:
-            position[self.position[0], self.position[1]+1] = 1
-        if position_row > 0:
-            position[self.position[0], self.position[1]-1] = 1
-        if self.col > position_col + 1:
-            position[self.position[0]+1, self.position[1]] = 1
-        if position_col > 0:
-            position[self.position[0]-1, self.position[1]] = 1
-
-        if self.rows > end_row + 1:
-            end[self.end[0], self.end[1]+1] = 1
-        if end_row > 0:
-            end[self.end[0], self.end[1]-1] = 1
-        if self.col > end_col + 1:
-            end[self.end[0]+1, self.end[1]] = 1
-        if end_col > 0:
-            end[self.end[0]-1, self.end[1]] = 1
-
-        position[self.position] = 10
-        end[self.end] = 10
+        position[self.position] = 1
+        end[self.end] = 1
         state[0] = position
         state[1] = end
         state[2] = walls
